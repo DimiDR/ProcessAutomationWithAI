@@ -131,12 +131,6 @@ export default function UserManagementPage() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center py-6">
               <div className="flex items-center">
-                <Link
-                  href="/dashboard"
-                  className="text-indigo-600 hover:text-indigo-500"
-                >
-                  ← Back to Dashboard
-                </Link>
                 <h2 className="ml-4 text-2xl font-bold text-gray-900">
                   Process Automation Assistant
                 </h2>
