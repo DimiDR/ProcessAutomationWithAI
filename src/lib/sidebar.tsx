@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 
 interface SidebarProps {
   guestMode: boolean;
@@ -9,6 +10,7 @@ interface SidebarProps {
 
 export default function Sidebar({ guestMode }: SidebarProps) {
   const pathname = usePathname();
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   const menuItems = [
     {
@@ -148,14 +150,43 @@ export default function Sidebar({ guestMode }: SidebarProps) {
   const headerBgClass = isGuestMode ? "bg-purple-100" : "bg-white";
 
   return (
-    <div className="fixed left-0 top-0 h-full w-64 shadow-lg border-r border-gray-200 transition-all duration-300 z-50 flex flex-col">
+    <div
+      className={`fixed left-0 top-0 h-full shadow-lg border-r border-gray-200 transition-all duration-300 z-50 flex flex-col ${
+        isCollapsed ? "w-16" : "w-64"
+      }`}
+    >
       {/* Background with subtle pattern for visual distinction */}
       <div className={`flex-1 ${bgClass}`}>
         {/* Header */}
         <div
-          className={`flex items-center p-4 border-b border-gray-200 ${headerBgClass}`}
+          className={`flex items-center ${
+            isCollapsed ? "px-2 py-3" : "p-4"
+          } border-b border-gray-200 ${headerBgClass}`}
         >
-          <h2 className="text-lg font-semibold text-gray-900">Navigation</h2>
+          {/* Toggle Button */}
+          <button
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className="p-1 rounded-md hover:bg-gray-200 transition-colors mr-2"
+            title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            <svg
+              className="w-5 h-5 text-gray-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d={isCollapsed ? "M13 5l7 7-7 7" : "M11 19l-7-7 7-7"}
+              />
+            </svg>
+          </button>
+          {!isCollapsed && (
+            <h2 className="text-lg font-semibold text-gray-900">Navigation</h2>
+          )}
         </div>
 
         {/* Navigation Items */}
@@ -167,7 +198,9 @@ export default function Sidebar({ guestMode }: SidebarProps) {
                 <li key={item.path}>
                   <Link
                     href={item.path}
-                    className={`flex items-center px-3 py-3 rounded-md text-sm font-medium transition-colors ${
+                    className={`flex items-center ${
+                      isCollapsed ? "px-2 py-3" : "px-3 py-3"
+                    } rounded-md text-sm font-medium transition-colors ${
                       isActive
                         ? "bg-indigo-50 text-indigo-700 border-r-2 border-indigo-700"
                         : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
@@ -175,7 +208,9 @@ export default function Sidebar({ guestMode }: SidebarProps) {
                     title={item.name}
                   >
                     <div className="flex-shrink-0">{item.icon}</div>
-                    <span className="ml-3 truncate">{item.name}</span>
+                    {!isCollapsed && (
+                      <span className="ml-3 truncate">{item.name}</span>
+                    )}
                   </Link>
                 </li>
               );
@@ -185,7 +220,7 @@ export default function Sidebar({ guestMode }: SidebarProps) {
       </div>
 
       {/* Guest mode notice */}
-      {isGuestMode && (
+      {isGuestMode && !isCollapsed && (
         <div className="p-3 border-t bg-blue-50 border-gray-200">
           <div className="flex items-center space-x-2">
             <svg
