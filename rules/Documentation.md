@@ -124,12 +124,10 @@ Implement unit tests, that should be executer and be correct by every build.
 # Techstack
 
 AI - Open Router
-Website - React
+Website - NextJS
 Hosting: Firebase
 Backend: Firebase Functions
 No SQL DB: Firestore
 Authentication: Email / Google Account
 Canvas: Draw.io
 CSS: Tailwind
-
-The app will have a canvas to draw a simple process.

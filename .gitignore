@@ -8,6 +8,11 @@ node_modules/
 dist/
 web-build/
 
+# nextJS
+.next/
+.swc/
+.*.env
+
 # Native
 *.orig.*
 *.jks
