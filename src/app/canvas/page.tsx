@@ -5,6 +5,7 @@ import { auth } from "@/lib/firebase";
 import { User, onAuthStateChanged } from "firebase/auth";
 import { ActivityTracker } from "@/lib/activityTracker";
 import Link from "next/link";
+import Sidebar from "@/lib/sidebar";
 
 declare global {
   interface Window {
@@ -319,17 +320,14 @@ export default function CanvasPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Sidebar */}
+      <Sidebar guestMode={guestMode} />
+
       {/* Header */}
-      <header className="bg-white shadow">
+      <header className="bg-white shadow ml-64">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
             <div className="flex items-center">
-              <Link
-                href="/dashboard"
-                className="text-indigo-600 hover:text-indigo-500"
-              >
-                ← Back to Dashboard
-              </Link>
               <h2 className="ml-4 text-2xl font-bold text-gray-900">
                 Interactive Canvas - {currentCanvasName}
               </h2>
@@ -338,7 +336,14 @@ export default function CanvasPage() {
               <span className="text-sm text-gray-700">
                 {guestMode ? "Guest Mode" : `Welcome, ${user.email}`}
               </span>
-              {!guestMode && (
+              {guestMode ? (
+                <Link
+                  href="/auth"
+                  className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                >
+                  Login
+                </Link>
+              ) : (
                 <Link
                   href="/auth"
                   className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
@@ -351,7 +356,7 @@ export default function CanvasPage() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+      <main className="ml-64 max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         {/* Toolbar */}
         <div className="mb-4 bg-white shadow rounded-lg p-4">
           <div className="flex flex-wrap items-center gap-4">

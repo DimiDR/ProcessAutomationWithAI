@@ -5,6 +5,7 @@ import { auth } from "@/lib/firebase";
 import { User, onAuthStateChanged, signOut } from "firebase/auth";
 import Link from "next/link";
 import { ActivityTracker } from "@/lib/activityTracker";
+import Sidebar from "@/lib/sidebar";
 
 export default function SimulationPage() {
   const [user, setUser] = useState<User | null>(null);
@@ -166,8 +167,10 @@ export default function SimulationPage() {
     if (user && !guestMode) {
       ActivityTracker.trackActivity({
         userId: user.uid,
-        title: `Started simulation: ${sim.title}`,
+        userEmail: user.email!,
         type: "simulation_run",
+        title: `Started simulation: ${sim.title}`,
+        description: "User started a simulation scenario",
       });
     }
   };
@@ -206,8 +209,11 @@ export default function SimulationPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Sidebar */}
+      <Sidebar guestMode={guestMode} />
+
       {/* Header */}
-      <header className="bg-white shadow">
+      <header className="bg-white shadow ml-64">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
             <div className="flex items-center">
@@ -219,63 +225,27 @@ export default function SimulationPage() {
               <span className="text-sm text-gray-700">
                 {guestMode ? "Guest Mode" : `Welcome, ${user.email}`}
               </span>
-              <button
-                onClick={handleLogout}
-                className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-              >
-                {guestMode ? "Back to Auth" : "Sign out"}
-              </button>
+              {guestMode ? (
+                <Link
+                  href="/auth"
+                  className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                >
+                  Login
+                </Link>
+              ) : (
+                <button
+                  onClick={handleLogout}
+                  className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                >
+                  Sign out
+                </button>
+              )}
             </div>
           </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        {/* Navigation */}
-        <div className="mb-8">
-          <nav className="flex space-x-8 border-b border-gray-200">
-            <Link
-              href="/dashboard"
-              className="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm"
-            >
-              Dashboard
-            </Link>
-            <Link
-              href="/process-questions"
-              className="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm"
-            >
-              Process Questions
-            </Link>
-            <Link
-              href="/canvas"
-              className="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm"
-            >
-              Canvas
-            </Link>
-            <Link
-              href="/case-studies"
-              className="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm"
-            >
-              Case Studies
-            </Link>
-            <Link
-              href="/simulation"
-              className="border-yellow-500 text-yellow-600 border-b-2 whitespace-nowrap py-2 px-1 font-medium text-sm"
-              aria-current="page"
-            >
-              Simulation
-            </Link>
-            {!guestMode && (
-              <Link
-                href="/user-management"
-                className="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm"
-              >
-                User Management
-              </Link>
-            )}
-          </nav>
-        </div>
-
+      <main className="ml-64 max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         {/* Page Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">

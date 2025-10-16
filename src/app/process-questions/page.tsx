@@ -6,6 +6,7 @@ import { User, onAuthStateChanged } from "firebase/auth";
 import { getAIResponse } from "@/lib/openRouter";
 import { ActivityTracker } from "@/lib/activityTracker";
 import Link from "next/link";
+import Sidebar from "@/lib/sidebar";
 
 export default function ProcessQuestionsPage() {
   const [user, setUser] = useState<User | null>(null);
@@ -180,8 +181,11 @@ Structure your response professionally and provide actionable insights.`;
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Sidebar */}
+      <Sidebar guestMode={guestMode} />
+
       {/* Header */}
-      <header className="bg-white shadow">
+      <header className="bg-white shadow ml-64">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
             <div className="flex items-center">
@@ -199,7 +203,14 @@ Structure your response professionally and provide actionable insights.`;
               <span className="text-sm text-gray-700">
                 {guestMode ? "Guest Mode" : `Welcome, ${user.email}`}
               </span>
-              {!guestMode && (
+              {guestMode ? (
+                <Link
+                  href="/auth"
+                  className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                >
+                  Login
+                </Link>
+              ) : (
                 <Link
                   href="/auth"
                   className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
@@ -212,7 +223,7 @@ Structure your response professionally and provide actionable insights.`;
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto py-6 sm:px-6 lg:px-8">
+      <main className="ml-64 max-w-4xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
           <div className="bg-white shadow rounded-lg p-6">
             <h3 className="text-lg font-medium text-gray-900 mb-4">
