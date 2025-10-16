@@ -97,7 +97,7 @@ export default function AuthPage() {
   const handleGuestLogin = () => {
     // Guest login allows access to frontend without auth
     localStorage.setItem("guestMode", "true");
-    setUser({ email: "guest@example.com", uid: "guest" } as User);
+    window.location.href = "/dashboard";
   };
 
   if (user && user.uid !== "guest") {
@@ -109,16 +109,10 @@ export default function AuthPage() {
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-          {user?.uid === "guest"
-            ? "Welcome, Guest!"
-            : isLogin
-            ? "Sign in to your account"
-            : "Create your account"}
+          {isLogin ? "Sign in to your account" : "Create your account"}
         </h2>
         <p className="mt-2 text-center text-sm text-gray-600">
-          {user?.uid === "guest"
-            ? "You can explore features but won't be able to save data."
-            : isLogin
+          {isLogin
             ? "Or create a demo account"
             : "Already have an account? Sign in"}
         </p>
@@ -228,42 +222,6 @@ export default function AuthPage() {
                   ? "Need to create an account?"
                   : "Already have an account?"}
               </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {user?.uid === "guest" && (
-        <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-          <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-            <p className="text-center text-sm text-gray-600 mb-4">
-              You are browsing as a guest. Start exploring the features below.
-            </p>
-            <div className="space-y-3">
-              <a
-                href="/process-questions"
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700"
-              >
-                Process Questions
-              </a>
-              <a
-                href="/canvas"
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700"
-              >
-                Canvas
-              </a>
-              <a
-                href="/case-studies"
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700"
-              >
-                Case Studies
-              </a>
-              <a
-                href="/simulation"
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700"
-              >
-                Simulation
-              </a>
             </div>
           </div>
         </div>
