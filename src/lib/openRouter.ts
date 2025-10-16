@@ -33,16 +33,20 @@ export const queryOpenRouter = async (prompt: string) => {
   return data.choices[0].message.content;
 };
 
+export const getAIResponse = async (prompt: string) => {
+  return await queryOpenRouter(prompt);
+};
+
 export const generateProcessAutomationSuggestions = async (query: string) => {
-  const prompt = `You are a process automation consultant AI. A user has described a process problem: "${query}". 
-  Provide suggestions on how to automate this process using AI, robotics, NoCode/LowCode platforms, and/or programming. 
+  const prompt = `You are a process automation consultant AI. A user has described a process problem: "${query}".
+  Provide suggestions on how to automate this process using AI, robotics, NoCode/LowCode platforms, and/or programming.
   Include:
   1. Analysis of the current process
   2. Suggested automation solutions (prioritized list)
   3. Estimated implementation effort for each
   4. Potential benefits
   5. Hybrid solutions if appropriate
-  
+
   Be specific and actionable, suggesting tools like Zapier for NoCode, UiPath for RPA, or specific AI models.`;
 
   return await queryOpenRouter(prompt);

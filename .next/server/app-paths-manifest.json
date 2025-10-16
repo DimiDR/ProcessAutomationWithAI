@@ -1,4 +1,11 @@
 {
+  "/_not-found/page": "app/_not-found/page.js",
   "/auth/page": "app/auth/page.js",
-  "/page": "app/page.js"
+  "/canvas/page": "app/canvas/page.js",
+  "/case-studies/page": "app/case-studies/page.js",
+  "/dashboard/page": "app/dashboard/page.js",
+  "/favicon.ico/route": "app/favicon.ico/route.js",
+  "/page": "app/page.js",
+  "/process-questions/page": "app/process-questions/page.js",
+  "/simulation/page": "app/simulation/page.js"
 }

@@ -4,14 +4,46 @@ import { useState, useEffect } from "react";
 import { auth } from "@/lib/firebase";
 import { User, onAuthStateChanged, signOut } from "firebase/auth";
 import Link from "next/link";
+import { ActivityTracker, UserActivity } from "@/lib/activityTracker";
 
 export default function DashboardPage() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [guestMode, setGuestMode] = useState(false);
+  const [recentActivities, setRecentActivities] = useState<UserActivity[]>([]);
+  const [activityMetrics, setActivityMetrics] = useState({
+    questionsAsked: 0,
+    canvasesCreated: 0,
+    simulationsRun: 0,
+    caseStudiesViewed: 0,
+    totalActivities: 0,
+  });
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    // Check for guest mode first
+    const isGuest = localStorage.getItem("guestMode") === "true";
+    if (isGuest) {
+      setGuestMode(true);
+      setUser({ email: "guest@example.com" } as User);
+      setLoading(false);
+      return;
+    }
+
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setUser(user);
+      if (user) {
+        // Load recent activities and metrics
+        try {
+          const [activities, metrics] = await Promise.all([
+            ActivityTracker.getRecentActivities(user.uid, 5),
+            ActivityTracker.getActivityMetrics(user.uid),
+          ]);
+          setRecentActivities(activities);
+          setActivityMetrics(metrics);
+        } catch (error) {
+          console.error("Error loading dashboard data:", error);
+        }
+      }
       setLoading(false);
     });
     return unsubscribe;
@@ -48,7 +80,7 @@ export default function DashboardPage() {
             </div>
             <div className="flex items-center space-x-4">
               <span className="text-sm text-gray-700">
-                Welcome, {user.email}
+                {guestMode ? "Guest Mode" : `Welcome, ${user.email}`}
               </span>
               <button
                 onClick={handleLogout}
@@ -97,6 +129,41 @@ export default function DashboardPage() {
             </Link>
           </nav>
         </div>
+
+        {/* Activity Metrics Section */}
+        {activityMetrics.totalActivities > 0 && (
+          <div className="mb-8 bg-white shadow rounded-lg p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">
+              Your Activity Summary
+            </h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-blue-600">
+                  {activityMetrics.questionsAsked}
+                </div>
+                <div className="text-sm text-gray-600">Questions Asked</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-600">
+                  {activityMetrics.canvasesCreated}
+                </div>
+                <div className="text-sm text-gray-600">Canvases Created</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-yellow-600">
+                  {activityMetrics.simulationsRun}
+                </div>
+                <div className="text-sm text-gray-600">Simulations Run</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-purple-600">
+                  {activityMetrics.caseStudiesViewed}
+                </div>
+                <div className="text-sm text-gray-600">Case Studies Viewed</div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Hero Section */}
         <div className="bg-white shadow px-4 py-5 sm:px-6">
@@ -196,15 +263,35 @@ export default function DashboardPage() {
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">
                   Recent Activity
                 </h3>
-                <p className="text-gray-600 mb-4">
-                  Recent activity will appear here
-                </p>
-                <button
-                  disabled
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-gray-500 bg-gray-200 cursor-not-allowed"
+                <div className="space-y-2 mb-4">
+                  {recentActivities.length > 0 ? (
+                    recentActivities.map((activity, index) => (
+                      <div
+                        key={activity.id || index}
+                        className="flex items-center space-x-2 text-sm text-gray-700"
+                      >
+                        <div className="w-2 h-2 bg-indigo-500 rounded-full flex-shrink-0"></div>
+                        <div className="flex-1 truncate">
+                          <span className="font-medium">{activity.title}</span>
+                          <span className="text-gray-500 ml-1">
+                            {activity.timestamp.toLocaleDateString()}
+                          </span>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-gray-500">
+                      No recent activity yet. Start using the tools!
+                    </p>
+                  )}
+                </div>
+                <Link
+                  href="#"
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-indigo-600 bg-white hover:bg-indigo-50"
+                  onClick={(e) => e.preventDefault()} // Placeholder
                 >
-                  Coming Soon
-                </button>
+                  View All Activity
+                </Link>
               </div>
             </div>
           </div>

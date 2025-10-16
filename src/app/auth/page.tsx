@@ -23,6 +23,14 @@ export default function AuthPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const isGuestRequest = urlParams.get("guest") === "true";
+
+    if (isGuestRequest) {
+      handleGuestLogin();
+      return;
+    }
+
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
     });
@@ -88,6 +96,7 @@ export default function AuthPage() {
 
   const handleGuestLogin = () => {
     // Guest login allows access to frontend without auth
+    localStorage.setItem("guestMode", "true");
     setUser({ email: "guest@example.com", uid: "guest" } as User);
   };
 

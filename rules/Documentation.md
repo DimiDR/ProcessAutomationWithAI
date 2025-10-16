@@ -12,6 +12,10 @@ It will have different features:
 
 # Functionalities in detail
 
+## Dashboard
+
+There should a dashboard with the list of canvases and researches assigned to own user.
+
 ## Process Questions
 
 Description:

@@ -14,17 +14,17 @@ This task list tracks progress on implementing the PRD: Process Automation with 
 
 - [ ] Project Initialization
 
-  - [ ] Set up Next.js project structure with React and Tailwind CSS
-  - [ ] Configure Firebase hosting and Firestore database
+  - [x] Set up Next.js project structure with React and Tailwind CSS
+  - [x] Configure Firebase hosting and Firestore database
   - [ ] Set up Firebase Functions for backend logic
-  - [ ] Configure authentication (email/Google)
-  - [ ] Integrate OpenAI via Open Router
-  - [ ] Add ESLint and automated unit testing on builds
+  - [x] Configure authentication (email/Google)
+  - [x] Integrate OpenAI via Open Router
+  - [x] Add ESLint and automated unit testing on builds
 
 - [ ] User Authentication and Management
 
-  - [ ] Implement login/logout with email or Google
-  - [ ] Add guest login mode with feature restrictions
+  - [x] Implement login/logout with email or Google
+  - [x] Add guest login mode with feature restrictions
   - [ ] Create user profile pages with team assignments
   - [ ] Enable sharing workflows and canvases within teams
 
