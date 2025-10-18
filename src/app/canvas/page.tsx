@@ -112,16 +112,51 @@ function ProcessNode({ data, selected }: any) {
     }
   };
 
+  // Render handles based on node type
+  const renderHandles = () => {
+    const handleStyle = { background: '#555', width: 8, height: 8 };
+    
+    if (data.nodeType === 'start') {
+      // Start node: only source handles (4 exit points)
+      return (
+        <>
+          <Handle type="source" position={Position.Top} id="top" style={handleStyle} />
+          <Handle type="source" position={Position.Right} id="right" style={handleStyle} />
+          <Handle type="source" position={Position.Bottom} id="bottom" style={handleStyle} />
+          <Handle type="source" position={Position.Left} id="left" style={handleStyle} />
+        </>
+      );
+    } else if (data.nodeType === 'end') {
+      // End node: only target handles (4 entry points)
+      return (
+        <>
+          <Handle type="target" position={Position.Top} id="top" style={handleStyle} />
+          <Handle type="target" position={Position.Right} id="right" style={handleStyle} />
+          <Handle type="target" position={Position.Bottom} id="bottom" style={handleStyle} />
+          <Handle type="target" position={Position.Left} id="left" style={handleStyle} />
+        </>
+      );
+    } else {
+      // Process and Decision nodes: both source and target handles (4 connection points each)
+      return (
+        <>
+          <Handle type="target" position={Position.Top} id="target-top" style={handleStyle} />
+          <Handle type="target" position={Position.Right} id="target-right" style={handleStyle} />
+          <Handle type="target" position={Position.Bottom} id="target-bottom" style={handleStyle} />
+          <Handle type="target" position={Position.Left} id="target-left" style={handleStyle} />
+          
+          <Handle type="source" position={Position.Top} id="source-top" style={handleStyle} />
+          <Handle type="source" position={Position.Right} id="source-right" style={handleStyle} />
+          <Handle type="source" position={Position.Bottom} id="source-bottom" style={handleStyle} />
+          <Handle type="source" position={Position.Left} id="source-left" style={handleStyle} />
+        </>
+      );
+    }
+  };
+
   return (
     <>
-      {/* Target handle (for incoming connections) - hidden for start nodes */}
-      {data.nodeType !== 'start' && (
-        <Handle
-          type="target"
-          position={Position.Top}
-          style={{ background: '#555' }}
-        />
-      )}
+      {renderHandles()}
       
       <div style={getNodeStyle()}>
         {data.nodeType === 'decision' ? (
@@ -146,15 +181,6 @@ function ProcessNode({ data, selected }: any) {
           </div>
         )}
       </div>
-      
-      {/* Source handle (for outgoing connections) - hidden for end nodes */}
-      {data.nodeType !== 'end' && (
-        <Handle
-          type="source"
-          position={Position.Bottom}
-          style={{ background: '#555' }}
-        />
-      )}
     </>
   );
 }
@@ -163,6 +189,126 @@ function ProcessNode({ data, selected }: any) {
 const nodeTypes: NodeTypes = {
   processNode: ProcessNode,
 };
+
+// Saved Canvases Modal Component
+function SavedCanvasesModal({
+  isOpen,
+  onClose,
+  savedCanvases,
+  onLoadCanvas,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  savedCanvases: Array<{ id: string; name: string; nodes: Node[]; edges: Edge[] }>;
+  onLoadCanvas: (canvas: any) => void;
+}) {
+  if (!isOpen) return null;
+
+  return (
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+      onClick={onClose}
+    >
+      <div 
+        className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Modal Header */}
+        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+          <h3 className="text-xl font-semibold" style={{ color: '#0057D9' }}>
+            Load Saved Canvas
+          </h3>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Modal Body */}
+        <div className="p-6 overflow-y-auto flex-1">
+          {savedCanvases.length > 0 ? (
+            <div className="space-y-3">
+              {savedCanvases.map((canvas) => (
+                <button
+                  key={canvas.id}
+                  onClick={() => {
+                    onLoadCanvas(canvas);
+                    onClose();
+                  }}
+                  className="w-full text-left px-4 py-3 border rounded-lg text-sm font-medium transition-all duration-200 hover:shadow-md"
+                  style={{
+                    borderColor: '#D1D5DB',
+                    color: '#374151',
+                    backgroundColor: 'white'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = '#E8F3FF';
+                    e.currentTarget.style.borderColor = '#0070F2';
+                    e.currentTarget.style.color = '#0070F2';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'white';
+                    e.currentTarget.style.borderColor = '#D1D5DB';
+                    e.currentTarget.style.color = '#374151';
+                  }}
+                >
+                  <div className="flex items-center gap-3">
+                    <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <div className="flex-1">
+                      <div className="font-semibold">{canvas.name}</div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        {canvas.nodes?.length || 0} nodes, {canvas.edges?.length || 0} connections
+                      </div>
+                    </div>
+                    <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </div>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-12">
+              <svg className="w-16 h-16 mb-4" style={{ color: '#D1E7FF' }} fill="currentColor" viewBox="0 0 24 24">
+                <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14z"/>
+              </svg>
+              <p className="text-sm text-gray-500 text-center">
+                No saved canvases yet.<br />Create and save your first canvas!
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Modal Footer */}
+        <div className="p-6 border-t border-gray-200">
+          <button
+            onClick={onClose}
+            className="w-full px-4 py-2 border shadow-sm text-sm font-medium rounded-lg transition-all duration-200"
+            style={{ 
+              borderColor: '#D1D5DB',
+              color: '#374151',
+              backgroundColor: 'white'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = '#F3F4F6';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'white';
+            }}
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // Properties Panel Component
 function PropertiesPanel({ 
@@ -330,6 +476,7 @@ export default function CanvasPage() {
   >([]);
   const [currentCanvasName, setCurrentCanvasName] = useState("Untitled Canvas");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [showCanvasModal, setShowCanvasModal] = useState(false);
 
   // React Flow state
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
@@ -380,21 +527,29 @@ export default function CanvasPage() {
     }
   }, [nodes, edges]);
 
-  // Keyboard shortcuts for undo/redo
+  // Keyboard shortcuts for undo/redo and delete
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Undo shortcut
       if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
         e.preventDefault();
         undo();
-      } else if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+      } 
+      // Redo shortcut
+      else if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
         e.preventDefault();
         redo();
+      }
+      // Delete shortcut (Delete or Entf key)
+      else if (e.key === 'Delete') {
+        e.preventDefault();
+        deleteSelectedElements();
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [historyStep, history]);
+  }, [historyStep, history, selectedNodeId, edges]);
 
   const addToHistory = (state: HistoryState) => {
     setHistory((prev) => {
@@ -624,6 +779,19 @@ export default function CanvasPage() {
     setSelectedNodeId(null);
   };
 
+  const deleteSelectedElements = () => {
+    // Delete selected node if any
+    if (selectedNodeId) {
+      deleteSelectedNode();
+    }
+    
+    // Delete selected edges
+    const selectedEdges = edges.filter(edge => edge.selected);
+    if (selectedEdges.length > 0) {
+      setEdges((eds) => eds.filter((edge) => !edge.selected));
+    }
+  };
+
   const exportCanvasAsJSON = () => {
     const canvasData = {
       name: currentCanvasName,
@@ -820,23 +988,49 @@ export default function CanvasPage() {
               </button>
 
               {!guestMode && (
-                <button
-                  onClick={saveCurrentCanvas}
-                  className="inline-flex items-center gap-2 px-3 py-2 border border-transparent text-sm font-medium rounded-lg text-white shadow-sm transition-all duration-200"
-                  style={{ backgroundColor: '#0070F2' }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = '#0057D9';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = '#0070F2';
-                  }}
-                  title="Save Canvas"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-                  </svg>
-                  Save
-                </button>
+                <>
+                  <button
+                    onClick={saveCurrentCanvas}
+                    className="inline-flex items-center gap-2 px-3 py-2 border border-transparent text-sm font-medium rounded-lg text-white shadow-sm transition-all duration-200"
+                    style={{ backgroundColor: '#0070F2' }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = '#0057D9';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = '#0070F2';
+                    }}
+                    title="Save Canvas"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                    </svg>
+                    Save
+                  </button>
+
+                  <button
+                    onClick={() => setShowCanvasModal(true)}
+                    className="inline-flex items-center gap-2 px-3 py-2 border shadow-sm text-sm font-medium rounded-lg transition-all duration-200"
+                    style={{ 
+                      borderColor: '#D1D5DB',
+                      color: '#374151',
+                      backgroundColor: 'white'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = '#F3F4F6';
+                      e.currentTarget.style.borderColor = '#9CA3AF';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'white';
+                      e.currentTarget.style.borderColor = '#D1D5DB';
+                    }}
+                    title="Load Canvas"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                    </svg>
+                    Load
+                  </button>
+                </>
               )}
             </div>
 
@@ -1030,21 +1224,21 @@ export default function CanvasPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-          {/* Canvas Area */}
-          <div className="lg:col-span-3">
+        <div className="flex flex-col lg:flex-row gap-6">
+          {/* Canvas Area - Takes up most of the space */}
+          <div className="flex-1 min-w-0">
             <div className="bg-white shadow-md rounded-lg border border-gray-200">
               <div className="p-4 border-b border-gray-200" style={{ backgroundColor: '#F9FAFB' }}>
                 <h3 className="text-lg font-semibold" style={{ color: '#0057D9' }}>
                   Canvas Workspace
                 </h3>
                 <p className="text-sm text-gray-600 mt-1">
-                  Drag nodes, connect with arrows. Nodes snap to 20px grid.
+                  Drag nodes, connect with arrows. Nodes snap to 20px grid. Press <kbd className="px-1.5 py-0.5 text-xs font-semibold bg-gray-200 border border-gray-300 rounded">Del</kbd> to delete selected nodes or arrows.
                 </p>
               </div>
               <div
                 ref={reactFlowWrapper}
-                className="w-full h-96 lg:h-[600px] border-0"
+                className="w-full h-96 lg:h-[700px] border-0"
               >
                 <ReactFlow
                   nodes={nodes}
@@ -1077,78 +1271,24 @@ export default function CanvasPage() {
             </div>
           </div>
 
-          {/* Properties Panel */}
-          <div className="lg:col-span-1">
+          {/* Properties Panel - Fixed width sidebar */}
+          <div className="w-full lg:w-80 flex-shrink-0">
             <PropertiesPanel
               selectedNode={selectedNode}
               onUpdate={updateNodeData}
               onDelete={deleteSelectedNode}
             />
           </div>
-
-          {/* Saved Canvases */}
-          <div className="lg:col-span-1">
-            <div className="bg-white shadow-md rounded-lg border border-gray-200 p-5">
-              <h3 className="text-lg font-semibold mb-4" style={{ color: '#0057D9' }}>
-                Saved Canvases
-              </h3>
-              {!guestMode ? (
-                savedCanvases.length > 0 ? (
-                  <div className="space-y-2">
-                    {savedCanvases.map((canvas) => (
-                      <button
-                        key={canvas.id}
-                        onClick={() => loadCanvas(canvas)}
-                        className="w-full text-left px-3 py-2 border rounded-lg text-sm font-medium transition-all duration-200"
-                        style={{
-                          borderColor: '#D1D5DB',
-                          color: '#374151',
-                          backgroundColor: 'white'
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.backgroundColor = '#E8F3FF';
-                          e.currentTarget.style.borderColor = '#0070F2';
-                          e.currentTarget.style.color = '#0070F2';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.backgroundColor = 'white';
-                          e.currentTarget.style.borderColor = '#D1D5DB';
-                          e.currentTarget.style.color = '#374151';
-                        }}
-                      >
-                        <div className="flex items-center gap-2">
-                          <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                          </svg>
-                          <span className="truncate">{canvas.name}</span>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center py-6">
-                    <svg className="w-12 h-12 mb-3" style={{ color: '#D1E7FF' }} fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14z"/>
-                    </svg>
-                    <p className="text-xs text-gray-500 text-center">
-                      No saved canvases yet. Create and save your first canvas!
-                    </p>
-                  </div>
-                )
-              ) : (
-                <div className="flex flex-col items-center justify-center py-6">
-                  <svg className="w-12 h-12 mb-3" style={{ color: '#D1E7FF' }} fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
-                  </svg>
-                  <p className="text-xs text-gray-500 text-center">
-                    Log in to save and load canvases.
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
         </div>
       </main>
+
+      {/* Saved Canvases Modal */}
+      <SavedCanvasesModal
+        isOpen={showCanvasModal}
+        onClose={() => setShowCanvasModal(false)}
+        savedCanvases={savedCanvases}
+        onLoadCanvas={loadCanvas}
+      />
     </div>
   );
 }
