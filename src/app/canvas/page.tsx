@@ -329,7 +329,7 @@ export default function CanvasPage() {
           <div className="flex justify-between items-center py-6">
             <div className="flex items-center">
               <h2 className="ml-4 text-2xl font-bold text-gray-900">
-                Interactive Canvas - {currentCanvasName}
+                Super Canvas - {currentCanvasName}
               </h2>
             </div>
             <div className="flex items-center space-x-4">

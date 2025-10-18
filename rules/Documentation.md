@@ -47,18 +47,14 @@ Process Question empowers consultants to deliver precise, evidence-based automat
 
 ## Canvas
 
-The Canvas feature is an interactive, visual workspace that enables consultants to collaboratively design, map, and demonstrate process automation workflows. It provides a drag-and-drop interface for creating process flow diagrams, annotating them with automation opportunities, and simulating how AI, robotics, NoCode/LowCode, or programming solutions can streamline operations. Canvas serves as a dynamic tool for consultants to visually communicate complex automation strategies to clients, fostering engagement and clarity during consultations.
+I want to create an app where users can drag an drop process "boxes" and connect them with arrows. This should bea process documentation software like "SAP Signavio". The twist should be you can add additional information to the boxes if the process step can be full automized with this options: Code, LowCode, NoCode, RPA, AI Agent. Please write me a documentation which I can enter into Curser so AI can build me everything. Framework: NextJS+Tailwind. There should be drag and drop for the process flows and all the needed additional functionalities. Saving into backend, will be done later so here only frontend is needed. The documentation should be very detailed, as every AI execution in Curser cost money
 
-Key Capabilities:
-
-- Process Mapping: Users can create detailed process flowcharts by dragging and dropping nodes representing tasks, decision points, or data inputs. Each node can be customized with descriptions, metrics (e.g., time taken, error rate), and associated roles.
-- Automation Annotations: Consultants can tag nodes with recommended automation tools, drawing from Process Question suggestions or the Integration Hub. For example, a node labeled “Manual Data Entry” could be annotated with a suggestion to use an RPA tool like UiPath or a NoCode integration via Zapier.
-- Interactive Simulations: Canvas allows users to simulate automated processes, visualizing how changes (e.g., replacing manual steps with AI) impact efficiency, cost, or output. Simulations can incorporate real-time data from integrated tools via the Integration Hub.
-- Collaboration Tools: Supports real-time collaboration, enabling multiple users (e.g., consultants and clients) to edit the canvas simultaneously. Features include comment threads, version control, and role-based access to ensure secure teamwork.
-- Export and Sharing: Process flows can be exported as professional reports (e.g., PDF, PowerPoint) or interactive dashboards for client presentations. Integration with the Integration Hub allows direct implementation of designed workflows.
-
-Use Case Example:
-A consultant maps a client’s order fulfillment process on Canvas, identifying bottlenecks like manual order verification. Using Process Question recommendations, they annotate the verification step with an AI-based fraud detection model and link it to an OpenAI API via the Integration Hub. During a client meeting, the consultant simulates the automated process, showing a 40% reduction in processing time. The finalized flowchart is exported as a PDF for the client’s approval.
+- Drag-and-drop interface for adding process boxes.
+- Connecting boxes with directed arrows (edges).
+- Editing box properties, including name, description, and selection of an automation option.
+- Zooming, panning, and multi-selection on the canvas.
+- Undo/redo functionality for diagram changes.
+- Export diagram as JSON (for future backend integration) or PNG/SVG.
 
 Technical:
 
