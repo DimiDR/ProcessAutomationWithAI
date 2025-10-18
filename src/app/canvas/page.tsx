@@ -87,6 +87,17 @@ function ProcessNode({ data, selected }: any) {
           boxShadow: selected ? '0 0 0 4px rgba(243, 156, 18, 0.2)' : '0 3px 6px 0 rgba(243, 156, 18, 0.2)',
         };
       default:
+        // For process nodes, apply automation color if not Manual
+        if (data.automationType && data.automationType !== 'Manual') {
+          const automationColor = getAutomationColor();
+          return {
+            ...baseStyle,
+            background: automationColor + 'DD', // Add 87% opacity for clear visibility
+            border: selected ? `2px solid ${automationColor}` : `2px solid ${automationColor}`,
+            borderWidth: selected ? '2px' : '2px',
+            boxShadow: selected ? `0 0 0 3px ${automationColor}40` : `0 2px 4px 0 ${automationColor}30`,
+          };
+        }
         return {
           ...baseStyle,
           background: '#FEFEFE',
@@ -109,6 +120,23 @@ function ProcessNode({ data, selected }: any) {
         return '#ef4444';
       default:
         return '#6b7280';
+    }
+  };
+
+  const getAutomationSymbol = () => {
+    switch (data.automationType) {
+      case 'Code':
+        return '💻';
+      case 'LowCode':
+        return '🔧';
+      case 'NoCode':
+        return '🎨';
+      case 'RPA':
+        return '🤖';
+      case 'AI Agent':
+        return '🧠';
+      default:
+        return '';
     }
   };
 
@@ -169,13 +197,13 @@ function ProcessNode({ data, selected }: any) {
             {data.automationType && data.automationType !== 'Manual' && (
               <div
                 style={{
-                  fontSize: '10px',
+                  fontSize: '11px',
                   marginTop: '4px',
                   color: getAutomationColor(),
                   fontWeight: 'bold',
                 }}
               >
-                [{data.automationType}]
+                {getAutomationSymbol()} {data.automationType}
               </div>
             )}
           </div>
@@ -430,11 +458,11 @@ function PropertiesPanel({
             }}
           >
             <option value="Manual">Manual</option>
-            <option value="Code">Code</option>
-            <option value="LowCode">LowCode</option>
-            <option value="NoCode">NoCode</option>
-            <option value="RPA">RPA</option>
-            <option value="AI Agent">AI Agent</option>
+            <option value="Code">💻 Code</option>
+            <option value="LowCode">🔧 LowCode</option>
+            <option value="NoCode">🎨 NoCode</option>
+            <option value="RPA">🤖 RPA</option>
+            <option value="AI Agent">🧠 AI Agent</option>
           </select>
         </div>
 
