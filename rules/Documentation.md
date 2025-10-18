@@ -21,29 +21,8 @@ There should a dashboard with the list of canvases and researches assigned to ow
 Description:
 The Process Question feature is an intelligent, AI-powered module designed to provide consultants with tailored recommendations for automating business processes. By allowing users to input specific process-related challenges or queries, the system analyzes the input and suggests optimal automation strategies leveraging a combination of AI, robotics, NoCode/LowCode platforms, and custom programming solutions. This functionality serves as a virtual consultant, offering actionable insights to address inefficiencies, reduce costs, or enhance scalability in client workflows.
 
-Key Capabilities:
-
-- Query Analysis: Users submit detailed questions or descriptions of process pain points (e.g., “How can I automate repetitive data entry in our CRM system?”). The system employs natural language processing (NLP) to parse and interpret the query, identifying key process components and constraints.
-- Solution Recommendations: The system generates a prioritized list of automation solutions, such as integrating AI for predictive analytics, deploying robotic process automation (RPA) for repetitive tasks, or using NoCode platforms like Zapier for rapid workflow creation. Each recommendation includes a brief explanation of its applicability, estimated implementation effort, and potential benefits (e.g., time savings or error reduction).
-- Hybrid Suggestions: Where appropriate, the system proposes hybrid solutions combining multiple technologies (e.g., AI-driven data analysis paired with LowCode workflow automation) to address complex processes holistically.
-- Integration with External Tools: Through the Integration Hub, Process Question can pull real-time data from connected platforms (e.g., CRM or ERP systems) to contextualize recommendations, ensuring relevance to the client’s existing tech stack.
-- Learning and Customization: The feature adapts to user preferences over time, learning from past queries and feedback to refine suggestions. Consultants can also customize recommendation parameters, such as prioritizing cost-effective solutions or focusing on specific industries.
-
-Use Case Example:
-A consultant inputs, “Our client’s inventory management process is slow due to manual stock updates across multiple platforms.” Process Question analyzes the query, identifies integration points (e.g., Shopify, Excel), and suggests:
-
-1. An RPA bot to automate stock updates across platforms.
-2. A NoCode workflow using Make to sync data in real-time.
-3. An AI model to predict inventory needs based on historical data. The consultant receives a detailed report with implementation steps and links to the Integration Hub for immediate setup.
-
-Technical Foundation:
-
-- Powered by an NLP engine (e.g., leveraging models like BERT or Llama) for query understanding.
-- Backed by a knowledge base of automation best practices, populated with industry-specific case studies and updated via continuous learning.
-- Integrates with the app’s backend API to fetch data from connected tools, ensuring context-aware recommendations.
-
-Value Proposition:
-Process Question empowers consultants to deliver precise, evidence-based automation strategies quickly, reducing research time and enhancing client confidence in proposed solutions.
+The AI is connected to open router via API key.
+The LLM should give back a suggestion on what can be implemented in a way that canvas can understand it. Hence the LLM should give me a JSON output and this output should be displayed in canvas. Also the node properties should be filled. This means the LLM should be given exact instructions on how to build the Canvas JSON for ReactFlow. And ofcourse it should also additionaly give the "Automation Type" / "Label" / "Description to the nodes.
 
 ## Canvas
 

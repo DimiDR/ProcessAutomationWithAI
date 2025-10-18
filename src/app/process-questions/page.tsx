@@ -3,10 +3,86 @@
 import { useState, useEffect } from "react";
 import { auth } from "@/lib/firebase";
 import { User, onAuthStateChanged } from "firebase/auth";
-import { getAIResponse } from "@/lib/openRouter";
+import { getAIResponse, generateCanvasJSON } from "@/lib/openRouter";
 import { ActivityTracker } from "@/lib/activityTracker";
 import Link from "next/link";
 import Sidebar from "@/lib/sidebar";
+import {
+  ReactFlow,
+  Node,
+  Edge,
+  Controls,
+  Background,
+  BackgroundVariant,
+  NodeTypes,
+} from "reactflow";
+import "reactflow/dist/style.css";
+
+// Simple Process Node for Preview
+function ProcessNode({ data }: any) {
+  const getNodeStyle = () => {
+    const baseStyle = {
+      padding: '10px 16px',
+      borderRadius: '6px',
+      border: '1px solid #d1d5db',
+      background: '#ffffff',
+      minWidth: '100px',
+      textAlign: 'center' as const,
+      fontSize: '12px',
+      fontWeight: '500',
+      boxShadow: '0 2px 4px 0 rgba(0, 0, 0, 0.08)',
+    };
+
+    switch (data.nodeType) {
+      case 'start':
+        return {
+          ...baseStyle,
+          background: '#2ECC71',
+          color: 'white',
+          borderRadius: '50%',
+          width: '60px',
+          height: '60px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        };
+      case 'end':
+        return {
+          ...baseStyle,
+          background: '#E74C3C',
+          color: 'white',
+          borderRadius: '50%',
+          width: '60px',
+          height: '60px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        };
+      case 'decision':
+        return {
+          ...baseStyle,
+          background: '#FFF9E6',
+          border: '2px solid #F39C12',
+          color: '#855A00',
+          transform: 'rotate(45deg)',
+        };
+      default:
+        return baseStyle;
+    }
+  };
+
+  return (
+    <div style={getNodeStyle()}>
+      <div style={data.nodeType === 'decision' ? { transform: 'rotate(-45deg)' } : {}}>
+        {data.label}
+      </div>
+    </div>
+  );
+}
+
+const nodeTypes: NodeTypes = {
+  processNode: ProcessNode,
+};
 
 export default function ProcessQuestionsPage() {
   const [user, setUser] = useState<User | null>(null);
@@ -18,6 +94,11 @@ export default function ProcessQuestionsPage() {
   const [conversationHistory, setConversationHistory] = useState<
     Array<{ question: string; response: string }>
   >([]);
+  const [generatedCanvas, setGeneratedCanvas] = useState<any>(null);
+  const [isGeneratingCanvas, setIsGeneratingCanvas] = useState(false);
+  const [canvasError, setCanvasError] = useState<string | null>(null);
+  const [canvasWarning, setCanvasWarning] = useState<string | null>(null);
+  const [currentQuestion, setCurrentQuestion] = useState("");
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -77,6 +158,14 @@ Structure your response professionally and provide actionable insights.`;
         ...prev,
         { question, response: aiResponse },
       ]);
+      
+      // Store the current question for canvas generation
+      setCurrentQuestion(question);
+      
+      // Reset canvas state when new response is generated
+      setGeneratedCanvas(null);
+      setCanvasError(null);
+      setCanvasWarning(null);
 
       // Track activity if user is logged in
       if (user && !guestMode) {
@@ -105,40 +194,142 @@ Structure your response professionally and provide actionable insights.`;
     }
   };
 
-  const createCanvasFromResponse = () => {
-    if (!response) return;
+  const validateAndFixCanvasJSON = (jsonString: string) => {
+    let warning = null;
+    let parsedJSON = null;
 
-    // Generate a simple canvas JSON structure from the response
-    const canvasData = {
-      nodes: [
-        {
-          id: "start",
-          type: "start",
-          label: "Start Process",
-          position: { x: 100, y: 100 },
-        },
-        {
-          id: "automation",
-          type: "process",
-          label: "Automation Step",
-          position: { x: 300, y: 100 },
-          description: response.substring(0, 100) + "...",
-        },
-        {
-          id: "end",
-          type: "end",
-          label: "End Process",
-          position: { x: 500, y: 100 },
-        },
-      ],
-      edges: [
-        { id: "e1-2", source: "start", target: "automation" },
-        { id: "e2-3", source: "automation", target: "end" },
-      ],
+    try {
+      // Try to extract JSON from markdown code blocks
+      let cleanedJSON = jsonString.trim();
+      
+      // Remove markdown code blocks
+      if (cleanedJSON.includes("```")) {
+        const jsonMatch = cleanedJSON.match(/```(?:json)?\s*(\{[\s\S]*\})\s*```/);
+        if (jsonMatch) {
+          cleanedJSON = jsonMatch[1];
+          warning = "Extracted JSON from markdown formatting";
+        }
+      }
+      
+      // Try parsing
+      parsedJSON = JSON.parse(cleanedJSON);
+      
+      // Validate and fix structure
+      if (!parsedJSON.nodes || !Array.isArray(parsedJSON.nodes)) {
+        throw new Error("Invalid structure: missing nodes array");
+      }
+      
+      if (!parsedJSON.edges) {
+        parsedJSON.edges = [];
+        warning = "Added missing edges array";
+      }
+      
+      // Fix nodes
+      parsedJSON.nodes = parsedJSON.nodes.map((node: any, index: number) => {
+        const fixed: any = {
+          id: node.id || `node-${Date.now()}-${index}`,
+          type: node.type || "processNode",
+          position: node.position || { 
+            x: 80 + (index * 240), 
+            y: 80 + Math.floor(index / 4) * 160 
+          },
+          data: {
+            label: node.data?.label || node.label || `Step ${index + 1}`,
+            nodeType: node.data?.nodeType || node.nodeType || "process",
+            automationType: node.data?.automationType || node.automationType || "Manual",
+            description: node.data?.description || node.description || "",
+          },
+        };
+        
+        // Ensure type is processNode
+        if (fixed.type !== "processNode") {
+          fixed.type = "processNode";
+          warning = "Fixed node types to processNode";
+        }
+        
+        return fixed;
+      });
+      
+      // Fix edges
+      parsedJSON.edges = parsedJSON.edges.map((edge: any, index: number) => ({
+        id: edge.id || `e${index}`,
+        source: edge.source,
+        target: edge.target,
+        markerType: edge.markerType || "arrowclosed",
+      }));
+      
+      // Ensure name exists
+      if (!parsedJSON.name) {
+        parsedJSON.name = "Generated Process";
+      }
+      
+      return { success: true, data: parsedJSON, warning };
+    } catch (error) {
+      console.error("JSON parsing error:", error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : "Failed to parse JSON",
+        warning: null 
+      };
+    }
+  };
+
+  const handleGenerateCanvas = async () => {
+    if (!response || !currentQuestion) return;
+    
+    setIsGeneratingCanvas(true);
+    setCanvasError(null);
+    setCanvasWarning(null);
+    
+    try {
+      const jsonResponse = await generateCanvasJSON(currentQuestion, response);
+      
+      // Validate and fix the JSON
+      const result = validateAndFixCanvasJSON(jsonResponse);
+      
+      if (result.success) {
+        setGeneratedCanvas(result.data);
+        if (result.warning) {
+          setCanvasWarning(result.warning);
+        }
+        
+        // Track activity
+        if (user && !guestMode) {
+          await ActivityTracker.trackActivity({
+            userId: user.uid,
+            userEmail: user.email!,
+            type: "canvas_generated",
+            title: "Generated canvas from process question",
+            description: `Created canvas: ${result.data.name}`,
+            metadata: { 
+              nodeCount: result.data.nodes?.length || 0,
+              edgeCount: result.data.edges?.length || 0 
+            },
+          });
+        }
+      } else {
+        setCanvasError(result.error || "Failed to generate valid canvas JSON");
+      }
+    } catch (error) {
+      console.error("Error generating canvas:", error);
+      setCanvasError("Failed to generate canvas. Please try again.");
+    } finally {
+      setIsGeneratingCanvas(false);
+    }
+  };
+
+  const createCanvasFromResponse = (canvasData?: any) => {
+    const dataToUse = canvasData || generatedCanvas;
+    if (!dataToUse) return;
+
+    // Store canvas data with metadata and navigate
+    const canvasWithMetadata = {
+      ...dataToUse,
+      exportedAt: new Date().toISOString(),
+      source: "process-questions",
     };
-
-    // Store canvas data and navigate
-    localStorage.setItem("canvasData", JSON.stringify(canvasData));
+    
+    localStorage.setItem("canvasData", JSON.stringify(canvasWithMetadata));
     window.location.href = "/canvas";
   };
 
@@ -264,19 +455,114 @@ Structure your response professionally and provide actionable insights.`;
                   {response}
                 </div>
                 <div className="mt-4 flex space-x-2">
+                  {!generatedCanvas && (
+                    <button
+                      onClick={handleGenerateCanvas}
+                      disabled={isGeneratingCanvas}
+                      className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isGeneratingCanvas ? (
+                        <>
+                          <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-indigo-700" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          Generating Canvas...
+                        </>
+                      ) : (
+                        "Generate Canvas"
+                      )}
+                    </button>
+                  )}
                   <button
-                    onClick={createCanvasFromResponse}
-                    className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                  >
-                    Create Canvas
-                  </button>
-                  <button
-                    onClick={() => setResponse("")}
+                    onClick={() => {
+                      setResponse("");
+                      setGeneratedCanvas(null);
+                      setCanvasError(null);
+                      setCanvasWarning(null);
+                    }}
                     className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                   >
                     Clear
                   </button>
                 </div>
+
+                {/* Canvas Error */}
+                {canvasError && (
+                  <div className="mt-4 bg-red-50 border border-red-200 rounded-md p-4">
+                    <div className="flex">
+                      <svg className="h-5 w-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                      </svg>
+                      <div className="ml-3">
+                        <p className="text-sm text-red-700">{canvasError}</p>
+                        <button
+                          onClick={handleGenerateCanvas}
+                          className="mt-2 text-sm text-red-600 hover:text-red-500 font-medium"
+                        >
+                          Try Again
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Canvas Preview */}
+                {generatedCanvas && (
+                  <div className="mt-6 border border-gray-200 rounded-lg overflow-hidden">
+                    {canvasWarning && (
+                      <div className="bg-yellow-50 border-b border-yellow-200 px-4 py-3">
+                        <div className="flex">
+                          <svg className="h-5 w-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                          </svg>
+                          <p className="ml-3 text-sm text-yellow-700">{canvasWarning}</p>
+                        </div>
+                      </div>
+                    )}
+                    <div className="bg-white p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="text-md font-medium text-gray-900">
+                          Canvas Preview: {generatedCanvas.name}
+                        </h4>
+                        <span className="text-xs text-gray-500">
+                          {generatedCanvas.nodes?.length || 0} nodes, {generatedCanvas.edges?.length || 0} connections
+                        </span>
+                      </div>
+                      <div className="border border-gray-200 rounded-md" style={{ height: '350px' }}>
+                        <ReactFlow
+                          nodes={generatedCanvas.nodes}
+                          edges={generatedCanvas.edges}
+                          nodeTypes={nodeTypes}
+                          fitView
+                          attributionPosition="bottom-left"
+                          proOptions={{ hideAttribution: true }}
+                        >
+                          <Background variant={BackgroundVariant.Dots} gap={20} size={1} />
+                          <Controls />
+                        </ReactFlow>
+                      </div>
+                      <div className="mt-4 flex space-x-2">
+                        <button
+                          onClick={() => createCanvasFromResponse(generatedCanvas)}
+                          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                        >
+                          Open in Canvas
+                        </button>
+                        <button
+                          onClick={() => {
+                            setGeneratedCanvas(null);
+                            setCanvasError(null);
+                            setCanvasWarning(null);
+                          }}
+                          className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                        >
+                          Regenerate
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
