@@ -1,38 +1,290 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { auth } from "@/lib/firebase";
 import { User, onAuthStateChanged } from "firebase/auth";
 import { ActivityTracker } from "@/lib/activityTracker";
 import Link from "next/link";
 import Sidebar from "@/lib/sidebar";
+import {
+  ReactFlow,
+  Node,
+  Edge,
+  addEdge,
+  Connection,
+  useNodesState,
+  useEdgesState,
+  Controls,
+  Background,
+  MiniMap,
+  NodeTypes,
+  OnConnect,
+  OnInit,
+  MarkerType,
+  Handle,
+  Position,
+} from "reactflow";
+import "reactflow/dist/style.css";
 
-declare global {
-  interface Window {
-    mxGraph: any;
-    mxGraphModel: any;
-    mxGeometry: any;
-    mxCell: any;
-    mxCodec: any;
-    mxUtils: any;
-    mxEvent: any;
-    mxCellOverlay: any;
-    mxImage: any;
-    mxImageExport: any;
+// Process Node Component
+function ProcessNode({ data, selected }: any) {
+  const getNodeStyle = () => {
+    let baseStyle = {
+      padding: '8px 12px',
+      borderRadius: '4px',
+      border: selected ? '2px solid #3b82f6' : '1px solid #d1d5db',
+      background: '#ffffff',
+      minWidth: '120px',
+      textAlign: 'center' as const,
+      fontSize: '14px',
+      fontWeight: '500',
+      boxShadow: selected ? '0 0 0 1px #3b82f6' : '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+    };
+
+    switch (data.nodeType) {
+      case 'start':
+        return {
+          ...baseStyle,
+          background: '#4CAF50',
+          color: 'white',
+          borderRadius: '50%',
+          width: '80px',
+          height: '80px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        };
+      case 'end':
+        return {
+          ...baseStyle,
+          background: '#f44336',
+          color: 'white',
+          borderRadius: '50%',
+          width: '80px',
+          height: '80px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        };
+      case 'decision':
+        return {
+          ...baseStyle,
+          transform: 'rotate(45deg)',
+          width: '80px',
+          height: '80px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        };
+      default:
+        return baseStyle;
+    }
+  };
+
+  const getAutomationColor = () => {
+    switch (data.automationType) {
+      case 'Code':
+        return '#8b5cf6';
+      case 'LowCode':
+        return '#06b6d4';
+      case 'NoCode':
+        return '#10b981';
+      case 'RPA':
+        return '#f59e0b';
+      case 'AI Agent':
+        return '#ef4444';
+      default:
+        return '#6b7280';
+    }
+  };
+
+  return (
+    <>
+      {/* Target handle (for incoming connections) - hidden for start nodes */}
+      {data.nodeType !== 'start' && (
+        <Handle
+          type="target"
+          position={Position.Top}
+          style={{ background: '#555' }}
+        />
+      )}
+      
+      <div style={getNodeStyle()}>
+        {data.nodeType === 'decision' ? (
+          <div style={{ transform: 'rotate(-45deg)' }}>
+            {data.label}
+          </div>
+        ) : (
+          <div>
+            <div>{data.label}</div>
+            {data.automationType && data.automationType !== 'Manual' && (
+              <div
+                style={{
+                  fontSize: '10px',
+                  marginTop: '4px',
+                  color: getAutomationColor(),
+                  fontWeight: 'bold',
+                }}
+              >
+                [{data.automationType}]
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+      
+      {/* Source handle (for outgoing connections) - hidden for end nodes */}
+      {data.nodeType !== 'end' && (
+        <Handle
+          type="source"
+          position={Position.Bottom}
+          style={{ background: '#555' }}
+        />
+      )}
+    </>
+  );
+}
+
+// Define node types
+const nodeTypes: NodeTypes = {
+  processNode: ProcessNode,
+};
+
+// Properties Panel Component
+function PropertiesPanel({ 
+  selectedNode, 
+  onUpdate, 
+  onDelete 
+}: { 
+  selectedNode: Node | null; 
+  onUpdate: (data: any) => void; 
+  onDelete: () => void;
+}) {
+  if (!selectedNode) {
+    return (
+      <div className="bg-white shadow rounded-lg p-4">
+        <h3 className="text-lg font-medium text-gray-900 mb-4">
+          Properties
+        </h3>
+        <p className="text-sm text-gray-500">
+          Select a node to edit its properties
+        </p>
+      </div>
+    );
   }
+
+  // Check if node has valid data structure
+  if (!selectedNode.data) {
+    return (
+      <div className="bg-white shadow rounded-lg p-4">
+        <h3 className="text-lg font-medium text-gray-900 mb-4">
+          Properties
+        </h3>
+        <p className="text-sm text-gray-500">
+          Node data is missing. Please try reselecting the node.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white shadow rounded-lg p-4">
+      <h3 className="text-lg font-medium text-gray-900 mb-4">
+        Node Properties
+      </h3>
+      
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Node Type
+          </label>
+          <div className="px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-sm">
+            {selectedNode.data.nodeType || 'process'}
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Label
+          </label>
+          <input
+            type="text"
+            value={selectedNode.data.label || ''}
+            onChange={(e) => onUpdate({ label: e.target.value })}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Description
+          </label>
+          <textarea
+            value={selectedNode.data.description || ''}
+            onChange={(e) => onUpdate({ description: e.target.value })}
+            rows={3}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            placeholder="Add a description..."
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Automation Type
+          </label>
+          <select
+            value={selectedNode.data.automationType || 'Manual'}
+            onChange={(e) => onUpdate({ automationType: e.target.value })}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+          >
+            <option value="Manual">Manual</option>
+            <option value="Code">Code</option>
+            <option value="LowCode">LowCode</option>
+            <option value="NoCode">NoCode</option>
+            <option value="RPA">RPA</option>
+            <option value="AI Agent">AI Agent</option>
+          </select>
+        </div>
+
+        <div className="pt-4 border-t border-gray-200">
+          <button
+            onClick={onDelete}
+            className="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+          >
+            Delete Node
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// History interface for undo/redo
+interface HistoryState {
+  nodes: Node[];
+  edges: Edge[];
 }
 
 export default function CanvasPage() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [guestMode, setGuestMode] = useState(false);
-  const canvasRef = useRef<HTMLDivElement>(null);
-  const graphRef = useRef<any>(null);
   const [savedCanvases, setSavedCanvases] = useState<
-    Array<{ id: string; name: string; data: any }>
+    Array<{ id: string; name: string; nodes: Node[]; edges: Edge[] }>
   >([]);
   const [currentCanvasName, setCurrentCanvasName] = useState("Untitled Canvas");
-  const [isCreatingCanvas, setIsCreatingCanvas] = useState(false);
+
+  // React Flow state
+  const [nodes, setNodes, onNodesChange] = useNodesState([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+
+  // Undo/Redo state
+  const [history, setHistory] = useState<HistoryState[]>([]);
+  const [historyStep, setHistoryStep] = useState(-1);
+
+  const reactFlowWrapper = useRef<HTMLDivElement>(null);
+  const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -51,94 +303,110 @@ export default function CanvasPage() {
   }, []);
 
   useEffect(() => {
-    if (user && canvasRef.current) {
+    if (user) {
       initializeCanvas();
     }
-  }, [user, canvasRef.current]);
+  }, [user]);
+
+  // Add history entry whenever nodes or edges change
+  useEffect(() => {
+    if (nodes.length > 0 || edges.length > 0) {
+      addToHistory({ nodes, edges });
+    }
+  }, [nodes, edges]);
+
+  // Keyboard shortcuts for undo/redo
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        undo();
+      } else if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+        e.preventDefault();
+        redo();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [historyStep, history]);
+
+  const addToHistory = (state: HistoryState) => {
+    setHistory((prev) => {
+      const newHistory = prev.slice(0, historyStep + 1);
+      newHistory.push(state);
+      // Limit history to 50 steps
+      if (newHistory.length > 50) {
+        newHistory.shift();
+        setHistoryStep(49);
+        return newHistory;
+      }
+      setHistoryStep(newHistory.length - 1);
+      return newHistory;
+    });
+  };
+
+  const undo = () => {
+    if (historyStep > 0) {
+      const prevState = history[historyStep - 1];
+      setNodes(prevState.nodes);
+      setEdges(prevState.edges);
+      setHistoryStep(historyStep - 1);
+    }
+  };
+
+  const redo = () => {
+    if (historyStep < history.length - 1) {
+      const nextState = history[historyStep + 1];
+      setNodes(nextState.nodes);
+      setEdges(nextState.edges);
+      setHistoryStep(historyStep + 1);
+    }
+  };
 
   const initializeCanvas = () => {
-    if (typeof window !== "undefined" && window.mxGraph) {
-      const container = canvasRef.current;
-      if (!container) return;
-
-      // Initialize mxGraph
-      const graph = new window.mxGraph(container);
-      graphRef.current = graph;
-
-      // Configure graph
-      graph.setConnectable(true);
-      graph.setCellsEditable(true);
-      graph.setCellsMovable(true);
-      graph.setCellsResizable(true);
-
-      // Load canvas data from localStorage if exists
-      const canvasData = localStorage.getItem("canvasData");
-      if (canvasData) {
-        try {
-          const data = JSON.parse(canvasData);
-          loadCanvasData(data);
-          localStorage.removeItem("canvasData"); // Clear temp data
-        } catch (error) {
-          console.error("Error loading canvas data:", error);
-        }
+    // Load canvas data from localStorage if exists
+    const canvasData = localStorage.getItem("canvasData");
+    if (canvasData) {
+      try {
+        const data = JSON.parse(canvasData);
+        loadCanvas(data);
+        localStorage.removeItem("canvasData"); // Clear temp data
+      } catch (error) {
+        console.error("Error loading canvas data:", error);
       }
+    }
 
-      // Load saved canvases for logged-in users
-      if (!guestMode && user && user.email) {
-        loadSavedCanvases();
-      }
+    // Load saved canvases for logged-in users
+    if (!guestMode && user && user.email) {
+      loadSavedCanvases();
     }
   };
 
-  const loadCanvasData = (data: any) => {
-    if (!graphRef.current || !data.nodes) return;
+  const onConnect: OnConnect = useCallback(
+    (params) => setEdges((eds) => addEdge({
+      ...params,
+      type: 'smoothstep',
+      animated: true,
+      markerEnd: {
+        type: MarkerType.ArrowClosed,
+      },
+    }, eds)),
+    [setEdges]
+  );
 
-    const graph = graphRef.current;
-    const model = graph.getModel();
-    model.beginUpdate();
+  const onInit: OnInit = useCallback(
+    (instance) => setReactFlowInstance(instance),
+    []
+  );
 
-    try {
-      const nodeMap = new Map();
+  const onNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
+    setSelectedNodeId(node.id);
+  }, []);
 
-      // Create nodes
-      data.nodes.forEach((node: any) => {
-        const vertex = graph.insertVertex(
-          graph.getDefaultParent(),
-          node.id,
-          node.label,
-          node.position.x,
-          node.position.y,
-          120,
-          60,
-          node.type === "start"
-            ? "shape=ellipse;fillColor=#4CAF50;fontColor=white;"
-            : node.type === "end"
-            ? "shape=ellipse;fillColor=#f44336;fontColor=white;"
-            : ""
-        );
-        nodeMap.set(node.id, vertex);
-      });
-
-      // Create edges
-      if (data.edges) {
-        data.edges.forEach((edge: any) => {
-          const source = nodeMap.get(edge.source);
-          const target = nodeMap.get(edge.target);
-          if (source && target) {
-            graph.insertEdge(
-              graph.getDefaultParent(),
-              edge.id,
-              "",
-              source,
-              target
-            );
-          }
-        });
-      }
-    } finally {
-      model.endUpdate();
-    }
-  };
+  const onPaneClick = useCallback(() => {
+    setSelectedNodeId(null);
+  }, []);
 
   const loadSavedCanvases = () => {
     if (guestMode) return;
@@ -153,19 +421,16 @@ export default function CanvasPage() {
   };
 
   const saveCurrentCanvas = () => {
-    if (guestMode || !graphRef.current) {
+    if (guestMode) {
       alert("Please log in to save canvases.");
       return;
     }
 
-    const graph = graphRef.current;
-    const encoder = new window.mxCodec();
-    const node = encoder.encode(graph.getModel());
-
     const canvasData = {
       id: Date.now().toString(),
       name: currentCanvasName,
-      data: window.mxUtils.getXml(node),
+      nodes,
+      edges,
       timestamp: new Date().toISOString(),
     };
 
@@ -191,25 +456,36 @@ export default function CanvasPage() {
   };
 
   const loadCanvas = (canvasData: any) => {
-    if (!graphRef.current) return;
+    if (!canvasData) return;
 
-    const graph = graphRef.current;
-    graph.getModel().clear();
-
-    // Decode XML and load into graph
-    const doc = window.mxUtils.parseXml(canvasData.data);
-    const codec = new window.mxCodec(doc);
-    const model = graph.getModel();
-    codec.decode(doc.documentElement, model);
+    // Load React Flow data
+    if (canvasData.nodes && canvasData.edges) {
+      // Validate and ensure all nodes have proper data structure
+      const validatedNodes = canvasData.nodes.map((node: Node) => ({
+        ...node,
+        data: node.data || {
+          label: 'Untitled',
+          nodeType: 'process',
+          automationType: 'Manual',
+          description: '',
+        },
+      }));
+      
+      setNodes(validatedNodes);
+      setEdges(canvasData.edges);
+      if (canvasData.name) {
+        setCurrentCanvasName(canvasData.name);
+      }
+    }
   };
 
   const createNewCanvas = () => {
-    if (!graphRef.current) return;
-
-    const graph = graphRef.current;
-    graph.getModel().clear();
+    setNodes([]);
+    setEdges([]);
     setCurrentCanvasName("Untitled Canvas");
-    setIsCreatingCanvas(true);
+    setSelectedNodeId(null);
+    setHistory([]);
+    setHistoryStep(-1);
 
     // Track canvas creation activity
     if (user && !guestMode) {
@@ -224,53 +500,90 @@ export default function CanvasPage() {
   };
 
   const addNode = (type: string) => {
-    if (!graphRef.current) return;
+    const newNode: Node = {
+      id: `node-${Date.now()}-${Math.random()}`,
+      type: 'processNode',
+      position: {
+        x: Math.floor(Math.random() * 15) * 20 + 100, // Snap to grid
+        y: Math.floor(Math.random() * 10) * 20 + 100, // Snap to grid
+      },
+      data: {
+        label: getNodeLabel(type),
+        nodeType: type,
+        automationType: 'Manual',
+        description: '',
+      },
+    };
 
-    const graph = graphRef.current;
-    const parent = graph.getDefaultParent();
+    setNodes((nds) => nds.concat(newNode));
+    setSelectedNodeId(newNode.id);
+  };
 
-    let label, style;
+  const getNodeLabel = (type: string) => {
     switch (type) {
       case "start":
-        label = "Start";
-        style = "shape=ellipse;fillColor=#4CAF50;fontColor=white;";
-        break;
+        return "Start";
       case "process":
-        label = "Process";
-        style = "";
-        break;
+        return "Process";
       case "decision":
-        label = "Decision";
-        style = "shape=rhombus;";
-        break;
+        return "Decision";
       case "end":
-        label = "End";
-        style = "shape=ellipse;fillColor=#f44336;fontColor=white;";
-        break;
+        return "End";
       default:
-        label = "Task";
-        style = "";
+        return "Task";
     }
+  };
 
-    const vertex = graph.insertVertex(
-      parent,
-      null,
-      label,
-      100,
-      100,
-      120,
-      60,
-      style
+  const updateNodeData = (data: any) => {
+    if (!selectedNodeId) return;
+
+    setNodes((nds) =>
+      nds.map((node) => {
+        if (node.id === selectedNodeId) {
+          // Ensure node has a data object before updating
+          const currentData = node.data || {};
+          return { ...node, data: { ...currentData, ...data } };
+        }
+        return node;
+      })
     );
-    graph.setSelectionCell(vertex);
+  };
+
+  const deleteSelectedNode = () => {
+    if (!selectedNodeId) return;
+
+    setNodes((nds) => nds.filter((node) => node.id !== selectedNodeId));
+    setEdges((eds) => eds.filter((edge) => 
+      edge.source !== selectedNodeId && edge.target !== selectedNodeId
+    ));
+    setSelectedNodeId(null);
+  };
+
+  const exportCanvasAsJSON = () => {
+    const canvasData = {
+      name: currentCanvasName,
+      nodes,
+      edges,
+      exportedAt: new Date().toISOString(),
+    };
+
+    const dataStr = JSON.stringify(canvasData, null, 2);
+    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+
+    const exportFileDefaultName = `${currentCanvasName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.json`;
+
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileDefaultName);
+    linkElement.click();
   };
 
   const exportCanvas = async () => {
-    if (!canvasRef.current) return;
+    if (!reactFlowWrapper.current) return;
 
     try {
       const html2canvas = (await import("html2canvas")).default;
-      const canvas = await html2canvas(canvasRef.current);
+      const canvas = await html2canvas(reactFlowWrapper.current);
       const link = document.createElement("a");
       link.download = `${currentCanvasName}.png`;
       link.href = canvas.toDataURL();
@@ -280,6 +593,8 @@ export default function CanvasPage() {
       alert("Error exporting canvas. Please try again.");
     }
   };
+
+  const selectedNode = nodes.find((node) => node.id === selectedNodeId) || null;
 
   if (loading) {
     return (
@@ -329,7 +644,7 @@ export default function CanvasPage() {
           <div className="flex justify-between items-center py-6">
             <div className="flex items-center">
               <h2 className="ml-4 text-2xl font-bold text-gray-900">
-                Super Canvas - {currentCanvasName}
+                Process Canvas - {currentCanvasName}
               </h2>
             </div>
             <div className="flex items-center space-x-4">
@@ -384,7 +699,26 @@ export default function CanvasPage() {
               </button>
             )}
 
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2 border-l border-gray-300 pl-4">
+              <button
+                onClick={undo}
+                disabled={historyStep <= 0}
+                className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Undo (Ctrl+Z)"
+              >
+                ↶ Undo
+              </button>
+              <button
+                onClick={redo}
+                disabled={historyStep >= history.length - 1}
+                className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Redo (Ctrl+Y)"
+              >
+                ↷ Redo
+              </button>
+            </div>
+
+            <div className="flex items-center space-x-2 border-l border-gray-300 pl-4">
               <span className="text-sm font-medium text-gray-700">
                 Add Node:
               </span>
@@ -414,16 +748,25 @@ export default function CanvasPage() {
               </button>
             </div>
 
-            <button
-              onClick={exportCanvas}
-              className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-            >
-              Export PNG
-            </button>
+            <div className="flex items-center space-x-2 border-l border-gray-300 pl-4">
+              <button
+                onClick={exportCanvas}
+                className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+              >
+                Export PNG
+              </button>
+
+              <button
+                onClick={exportCanvasAsJSON}
+                className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+              >
+                Export JSON
+              </button>
+            </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
           {/* Canvas Area */}
           <div className="lg:col-span-3">
             <div className="bg-white shadow rounded-lg">
@@ -432,18 +775,54 @@ export default function CanvasPage() {
                   Canvas Workspace
                 </h3>
                 <p className="text-sm text-gray-600">
-                  Click and drag to create connections between nodes
+                  Drag nodes, connect with arrows. Nodes snap to 20px grid.
                 </p>
               </div>
               <div
-                ref={canvasRef}
+                ref={reactFlowWrapper}
                 className="w-full h-96 lg:h-[600px] border-0"
-                style={{ cursor: "crosshair" }}
-              />
+              >
+                <ReactFlow
+                  nodes={nodes}
+                  edges={edges}
+                  onNodesChange={onNodesChange}
+                  onEdgesChange={onEdgesChange}
+                  onConnect={onConnect}
+                  onInit={onInit}
+                  onNodeClick={onNodeClick}
+                  onPaneClick={onPaneClick}
+                  nodeTypes={nodeTypes}
+                  snapToGrid={true}
+                  snapGrid={[20, 20]}
+                  fitView
+                  attributionPosition="bottom-left"
+                  className="bg-gray-50"
+                  defaultEdgeOptions={{
+                    type: 'smoothstep',
+                    animated: true,
+                    markerEnd: {
+                      type: MarkerType.ArrowClosed,
+                    },
+                  }}
+                >
+                  <Controls />
+                  <MiniMap />
+                  <Background variant="dots" gap={20} size={2} />
+                </ReactFlow>
+              </div>
             </div>
           </div>
 
-          {/* Sidebar */}
+          {/* Properties Panel */}
+          <div className="lg:col-span-1">
+            <PropertiesPanel
+              selectedNode={selectedNode}
+              onUpdate={updateNodeData}
+              onDelete={deleteSelectedNode}
+            />
+          </div>
+
+          {/* Saved Canvases */}
           <div className="lg:col-span-1">
             <div className="bg-white shadow rounded-lg p-4">
               <h3 className="text-lg font-medium text-gray-900 mb-4">

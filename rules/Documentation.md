@@ -47,7 +47,7 @@ Process Question empowers consultants to deliver precise, evidence-based automat
 
 ## Canvas
 
-I want to create an app where users can drag an drop process "boxes" and connect them with arrows. This should bea process documentation software like "SAP Signavio". The twist should be you can add additional information to the boxes if the process step can be full automized with this options: Code, LowCode, NoCode, RPA, AI Agent. Please write me a documentation which I can enter into Curser so AI can build me everything. Framework: NextJS+Tailwind. There should be drag and drop for the process flows and all the needed additional functionalities. Saving into backend, will be done later so here only frontend is needed. The documentation should be very detailed, as every AI execution in Curser cost money
+I want to create an app where users can drag an drop process "boxes" and connect them with arrows. This should be a process software like "SAP Signavio". The twist should be you can add additional information to the boxes if the process step can be full automized with this options: Code, LowCode, NoCode, RPA, AI Agent. Please write me a documentation which I can enter into Curser so AI can build me everything. Framework: NextJS+Tailwind. There should be drag and drop for the process flows and all the needed additional functionalities. Saving into backend, will be done later so here only frontend is needed. The documentation should be very detailed, as every AI execution in Curser cost money
 
 - Drag-and-drop interface for adding process boxes.
 - Connecting boxes with directed arrows (edges).
@@ -55,6 +55,7 @@ I want to create an app where users can drag an drop process "boxes" and connect
 - Zooming, panning, and multi-selection on the canvas.
 - Undo/redo functionality for diagram changes.
 - Export diagram as JSON (for future backend integration) or PNG/SVG.
+- It should be in a grid Layout, so the boxes habe more structure.
 
 Technical:
 
