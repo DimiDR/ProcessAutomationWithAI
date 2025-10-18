@@ -41,3 +41,16 @@ How to Vibe Code
 https://github.com/snarktank/ai-dev-tasks?tab=readme-ov-file
 
 https://mcp.so/server/mcp-abap-abap-adt-api/mario-andreschak
+
+# .env.local File
+# Firebase Configuration (Replace with your actual values)
+NEXT_PUBLIC_FIREBASE_API_KEY=your-api-key-here
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your-project-id.firebaseapp.com
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your-project-id.appspot.com
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
+NEXT_PUBLIC_FIREBASE_APP_ID=your-app-id
+NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=your-measurement-id
+
+# Open Router API
+OPEN_ROUTER_API_KEY=your open router key
