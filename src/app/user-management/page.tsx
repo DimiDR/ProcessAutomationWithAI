@@ -32,8 +32,15 @@ export default function UserManagementPage() {
   const [editingUser, setEditingUser] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({ name: "", role: "" });
   const [firebaseConnectionError, setFirebaseConnectionError] = useState(false);
+  const [guestMode, setGuestMode] = useState(false);
   const router = useRouter();
-  const guestMode = localStorage.getItem("guestMode") === "true";
+
+  // Initialize guest mode from localStorage on client side only
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setGuestMode(localStorage.getItem("guestMode") === "true");
+    }
+  }, []);
 
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
